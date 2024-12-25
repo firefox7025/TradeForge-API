@@ -1,13 +1,9 @@
 FROM rust:1-bullseye as cargo-build
-RUN apt-get update
-RUN apt-get install musl-tools -y
-RUN /root/.cargo/bin/rustup target add x86_64-unknown-linux-musl
-
 WORKDIR /app
 COPY ./src /app/src/
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./Cargo.lock ./Cargo.lock
-RUN /root/.cargo/bin/cargo build --target x86_64-unknown-linux-musl --release
+RUN /root/.cargo/bin/cargo build --release
 FROM alpine:3
-COPY --from=cargo-build /app/target/x86_64-unknown-linux-musl/release/search_and_sip .
+COPY --from=cargo-build /app/target/release/trade_forge_api .
 CMD ["./trade_forge_api"]

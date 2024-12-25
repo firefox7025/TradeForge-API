@@ -1,12 +1,13 @@
-FROM rust:1-bullseye as builder
-RUN mkdir /build
-COPY ["Cargo.toml", "Cargo.lock", "/build/"]
-ADD src /build/src
-WORKDIR /build
-RUN cargo build --release
+FROM rust:1-bullseye as cargo-build
+RUN apt-get update
+RUN apt-get install musl-tools -y
+RUN /root/.cargo/bin/rustup target add x86_64-unknown-linux-musl
 
-FROM debian:bullseye
-RUN mkdir /app
-COPY --from=builder /build/target/release/trade_forge_api /app/trade_forge_api
-EXPOSE 8080
-CMD "/app/trade_forge_api"
+WORKDIR /app
+COPY ./src /app/src/
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+RUN /root/.cargo/bin/cargo build --target x86_64-unknown-linux-musl --release
+FROM alpine:3
+COPY --from=cargo-build /app/target/x86_64-unknown-linux-musl/release/search_and_sip .
+CMD ["./trade_forge_api"]

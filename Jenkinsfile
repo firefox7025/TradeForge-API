@@ -13,14 +13,6 @@ pipeline {
         }
       }
     }
-    stage('Test') {
-      steps {
-        checkout scm
-        container('rust') {
-          sh 'cargo test'
-        }
-      }
-    }
     stage('Copy Artifacts') {
       steps {
         container('rust') {

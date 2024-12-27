@@ -1,18 +1,19 @@
 mod auth_service;
 pub mod models;
 pub mod schema;
+mod auth_middleware;
 
 use crate::auth_service::establish_connection;
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
 use bcrypt::{hash, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
 
-use crate::schema::users::password;
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
 };
 use utoipa_swagger_ui::SwaggerUi;
+use crate::auth_middleware::JwtMiddleware;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Login {
@@ -29,6 +30,9 @@ struct NewUserRequest {
     username: String,
     password: String,
 }
+
+
+
 
 #[get("/health")]
 async fn health() -> impl Responder {
@@ -64,6 +68,7 @@ async fn create_user(creation_request: web::Json<NewUserRequest>) -> impl Respon
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
+    let secret = "my-secret".to_string();
 
     #[derive(OpenApi)]
     #[openapi(
@@ -86,12 +91,15 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-    HttpServer::new(|| {
+
+    HttpServer::new(move || {
         App::new()
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
             )
+            .wrap(middleware::Logger::default())
+            .wrap(JwtMiddleware { secret: secret.clone() })
             .service(health)
             .service(login)
             .service(create_user)

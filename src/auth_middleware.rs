@@ -63,6 +63,12 @@ where
         let auth_header = req.headers().get("Authorization").cloned();
         let secret = self.secret.clone();
 
+        let path = req.path();
+        let excluded_paths = ["/users/create", "/users/verify", "/health"];
+        if excluded_paths.contains(&path) {
+            return Box::pin(self.service.call(req));
+        }
+
         let fut = self.service.call(req);
 
         Box::pin(async move {

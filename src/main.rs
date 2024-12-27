@@ -2,10 +2,12 @@ mod auth_service;
 pub mod models;
 pub mod schema;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
 use crate::auth_service::establish_connection;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use bcrypt::{hash, DEFAULT_COST};
+use serde::{Deserialize, Serialize};
 
+use crate::schema::users::password;
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
@@ -14,18 +16,18 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Login {
-    usernameOrEmail: String,
+    username_or_email: String,
     password: String,
-
 }
 
-#[derive(Serialize, Deserialize,Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct NewUserRequest {
     email: String,
     birthdate: String,
     firstname: String,
     lastname: String,
     username: String,
+    password: String,
 }
 
 #[get("/health")]
@@ -36,14 +38,13 @@ async fn health() -> impl Responder {
 #[post("/users/verify")]
 async fn login(request: web::Json<Login>) -> impl Responder {
     let login = Login {
-        usernameOrEmail: request.usernameOrEmail.clone(),
+        username_or_email: request.username_or_email.clone(),
         password: request.password.clone(),
     };
     let connection = &mut establish_connection();
     let login = auth_service::verify_login(connection, login).await;
     HttpResponse::Ok().body(login.to_string())
 }
-
 
 #[post("/users/create")]
 async fn create_user(creation_request: web::Json<NewUserRequest>) -> impl Responder {
@@ -53,8 +54,8 @@ async fn create_user(creation_request: web::Json<NewUserRequest>) -> impl Respon
         firstname: creation_request.firstname.clone(),
         lastname: creation_request.lastname.clone(),
         username: creation_request.username.clone(),
+        password: hash(creation_request.password.clone(), DEFAULT_COST).unwrap(),
     };
-
     let connection = &mut establish_connection();
     auth_service::insert_new_user(connection, new_user);
     HttpResponse::Ok().body("User created!")
@@ -85,7 +86,6 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-
     HttpServer::new(|| {
         App::new()
             .service(
@@ -93,8 +93,10 @@ async fn main() -> std::io::Result<()> {
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
             )
             .service(health)
+            .service(login)
+            .service(create_user)
     })
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

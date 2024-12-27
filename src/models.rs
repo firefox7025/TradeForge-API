@@ -10,6 +10,5 @@ pub struct Users {
     pub firstname: String,
     pub lastname: String,
     pub username: String,
+    pub password: String,
 }
-
-

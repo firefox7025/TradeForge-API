@@ -1,11 +1,10 @@
 use std::task::Poll;
 use actix_web::dev::Service;
 use actix_web::dev::Transform;
-use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, Handler, HttpMessage};
+use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error};
 use actix_web::{Result};
 use future::Ready;
 use futures_util::future::{self, LocalBoxFuture};
-use futures_util::Sink;
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use serde::{Deserialize, Serialize};
 
@@ -55,7 +54,7 @@ where
     fn poll_ready(
         &self,
         cx: &mut std::task::Context<'_>,
-    ) -> Poll<Result<(), actix_web::Error>> {
+    ) -> Poll<Result<(), Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -64,8 +63,8 @@ where
         let secret = self.secret.clone();
 
         let path = req.path();
-        let excluded_paths = ["/users/create", "/users/verify", "/health"];
-        if excluded_paths.contains(&path) {
+        let excluded_paths = ["/users/create", "/users/login", "/health", "/swagger-ui/*", "/api-docs/openapi.json"];
+        if excluded_paths.contains(&path) || path.contains(&*"swagger-ui") {
             return Box::pin(self.service.call(req));
         }
 

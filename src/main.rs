@@ -3,7 +3,7 @@ pub mod models;
 pub mod schema;
 mod auth_middleware;
 
-use crate::auth_service::establish_connection;
+use crate::auth_service::{create_jwt, establish_connection};
 use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
 use bcrypt::{hash, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
@@ -31,23 +31,26 @@ struct NewUserRequest {
     password: String,
 }
 
-
-
-
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("I'm alive!")
 }
 
-#[post("/users/verify")]
+#[post("/users/login")]
 async fn login(request: web::Json<Login>) -> impl Responder {
     let login = Login {
         username_or_email: request.username_or_email.clone(),
         password: request.password.clone(),
     };
+    let secret = "my-secret".to_string();
     let connection = &mut establish_connection();
     let login = auth_service::verify_login(connection, login).await;
-    HttpResponse::Ok().body(login.to_string())
+    match login {
+        Ok(user) => {
+            HttpResponse::Ok().json(create_jwt(user, &*secret))
+        },
+        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
+    }
 }
 
 #[post("/users/create")]
@@ -70,7 +73,6 @@ async fn create_user(creation_request: web::Json<NewUserRequest>) -> impl Respon
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init();
     let secret = "my-secret".to_string();
 
     #[derive(OpenApi)]

@@ -1,7 +1,6 @@
-use crate::models::Users;
+use crate::models::{Login, NewUserRequest, Users};
 use crate::schema::users::dsl::users;
 use crate::schema::users::{email, username};
-use crate::{Login, NewUserRequest};
 use bcrypt::verify;
 use diesel::associations::HasTable;
 use diesel::{ExpressionMethods};
@@ -12,6 +11,7 @@ use std::time::SystemTime;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub fn establish_connection() -> PgConnection {
@@ -43,7 +43,7 @@ pub async fn verify_login(conn: &mut PgConnection, login: Login) -> Result<Users
                 }
             }
         }
-        None => Err("Invalid username or email".to_string())    ,
+        None => Err("Invalid username or email".to_string()),
     }
 }
 
@@ -96,8 +96,8 @@ pub fn decode_jwt(token: &str, secret: &str) -> Option<TokenData<Claims>> {
     decode::<Claims>(token, &decoding_key, &validation).ok()
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct Claims {
     sub: Users,
     exp: usize,
 }

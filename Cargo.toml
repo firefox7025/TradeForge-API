@@ -12,8 +12,7 @@ diesel = { version = "2.2.6", features = ["postgres"] }
 uuid = {  version = "1.11.0", features = ["v4" , "fast-rng", "macro-diagnostics"] }
 dotenvy = "0.15.7"
 serde = { version = "1.0.216", features = ["derive"] }
-env_logger = "0.11.6"
-utoipa = "5.3.0"
+utoipa = { version = "5.3.0", features = ["actix_extras"] }
 postgres = "0.19.9"
 futures-util = "0.3.31" # no not remove, need it for the postgres driver c file
 log = "0.4"

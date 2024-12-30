@@ -4,10 +4,11 @@ use crate::schema::users::{email, username};
 use crate::{Login, NewUserRequest};
 use bcrypt::verify;
 use diesel::associations::HasTable;
-use diesel::ExpressionMethods;
+use diesel::{ExpressionMethods, SelectableHelper};
 use diesel::{Connection, Insertable, PgConnection, QueryDsl, RunQueryDsl};
 use dotenvy::dotenv;
 use std::env;
+use log::{error, info, trace, warn};
 use uuid::Uuid;
 
 pub fn establish_connection() -> PgConnection {
@@ -30,17 +31,17 @@ pub async fn verify_login(conn: &mut PgConnection, login: Login) -> bool {
     };
     match query.ok() {
         Some(user) => {
-            return verify(login.password, &user.password).unwrap();
+            verify(login.password, &user.password).unwrap()
         }
         None => false,
     }
 }
 
 pub async fn verify_token(token: String) -> bool {
-    return true;
+    true
 }
 
-pub fn insert_new_user(conn: &mut PgConnection, new_user: NewUserRequest) {
+pub fn insert_new_user(conn: &mut PgConnection, new_user: NewUserRequest) -> Result<Users, String> {
     let uid = format!("{}", Uuid::new_v4());
     let new_user = Users {
         id: uid,
@@ -51,8 +52,17 @@ pub fn insert_new_user(conn: &mut PgConnection, new_user: NewUserRequest) {
         username: new_user.username,
         password: new_user.password,
     };
-    let rows_inserted = diesel::insert_into(users::table())
+
+    let resp = diesel::insert_into(users::table())
         .values(&new_user)
-        .execute(conn);
-    assert_eq!(Ok(1), rows_inserted);
+        .on_conflict(email)
+        .do_nothing()
+        .execute(conn)
+        .expect("Error inserting user");
+    if resp != 1 {
+        warn!("Error saving new user, username or email already taken");
+        return Err("Error saving new user, username or email already taken.".parse().unwrap())
+    }
+    assert_eq!(resp, 1);
+    Ok(new_user)
 }

@@ -1960,6 +1960,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "jsonwebtoken",
+ "log",
  "postgres",
  "serde",
  "utoipa",

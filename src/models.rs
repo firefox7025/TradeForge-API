@@ -1,6 +1,8 @@
 use diesel::prelude::*;
 use diesel::{Insertable, Queryable, Selectable};
-#[derive(Debug, Queryable, Selectable, Insertable)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable)]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Users {
@@ -10,5 +12,6 @@ pub struct Users {
     pub firstname: String,
     pub lastname: String,
     pub username: String,
+    #[serde(skip_serializing)]
     pub password: String,
 }

@@ -61,8 +61,11 @@ async fn create_user(creation_request: web::Json<NewUserRequest>) -> impl Respon
         password: hash(creation_request.password.clone(), DEFAULT_COST).unwrap(),
     };
     let connection = &mut establish_connection();
-    auth_service::insert_new_user(connection, new_user);
-    HttpResponse::Ok().body("User created!")
+    let user = auth_service::insert_new_user(connection, new_user);
+    match user {
+        Ok(user) => HttpResponse::Ok().json(user),
+        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
+    }
 }
 
 #[actix_web::main]

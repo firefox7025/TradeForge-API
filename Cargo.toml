@@ -14,5 +14,6 @@ dotenvy = "0.15.7"
 serde = { version = "1.0.216", features = ["derive"] }
 utoipa = { version = "5.3.0", features = ["actix_extras"] }
 postgres = "0.19.9"
+actix-cors = "0.7.0"
 futures-util = "0.3.31" # no not remove, need it for the postgres driver c file
 log = "0.4"

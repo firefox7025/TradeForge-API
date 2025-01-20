@@ -1,17 +1,19 @@
+mod auth;
+mod auth_middleware;
 mod auth_service;
 pub mod models;
 pub mod schema;
-mod auth_middleware;
-mod auth;
 
-use utoipa::IntoParams;
+use actix_cors::Cors;
+use actix_web::http::header;
 use actix_web::{middleware, App, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
+use utoipa::IntoParams;
 
-use utoipa::{Modify, OpenApi, ToSchema};
-use utoipa_swagger_ui::SwaggerUi;
 use crate::auth::{create_user, health, login};
 use crate::auth_middleware::JwtMiddleware;
+use utoipa::{Modify, OpenApi, ToSchema};
+use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,7 +28,16 @@ async fn main() -> std::io::Result<()> {
     struct ApiDoc;
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:8080")
+            .allowed_origin("https://tradeforge.ultimaengineering.io")
+            .allowed_methods(vec!["GET", "POST", "DELETE", "PUT"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .service(health)
             .service(login)
             .service(create_user)
@@ -35,7 +46,9 @@ async fn main() -> std::io::Result<()> {
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
             )
             .wrap(middleware::Logger::default())
-            .wrap(JwtMiddleware { secret: secret.clone() })
+            .wrap(JwtMiddleware {
+                secret: secret.clone(),
+            })
     })
     .bind(("0.0.0.0", 8080))?
     .run()

@@ -56,6 +56,11 @@ pub struct NewUserRequest {
     pub password: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoginResponse {
+    pub token: String,
+}
+
 
 impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {

@@ -29,9 +29,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:8080")
-            .allowed_origin("https://tradeforge.ultimaengineering.io")
-            .allowed_methods(vec!["GET", "POST", "DELETE", "PUT"])
+            .allow_any_origin()
+            .allow_any_method()
+            .expose_any_header()
             .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
             .allowed_header(header::CONTENT_TYPE)
             .max_age(3600);
